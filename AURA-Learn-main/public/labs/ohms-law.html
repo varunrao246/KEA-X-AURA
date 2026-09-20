@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="en" data-lab-id="ohms-law-lab">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ohm's Law Circuit Lab</title>
+<link rel="stylesheet" href="/labs/lab.css">
+<script src="/labs/aura-bridge.js"></script>
+</head>
+<body>
+<div class="lab">
+  <div class="stage"><canvas id="c" style="width:100%;display:block;border-radius:12px"></canvas></div>
+
+  <div style="display:grid;gap:16px">
+    <div class="panel">
+      <p class="eyebrow">Controls</p>
+      <label class="ctl"><span class="head"><span>Battery voltage (V)</span><span class="val" id="vv">12 V</span></span>
+        <input id="v" type="range" min="1" max="24" step="1" value="12" aria-label="Battery voltage in volts"></label>
+      <label class="ctl"><span class="head"><span>Resistance (R)</span><span class="val" id="rv">6 Ω</span></span>
+        <input id="r" type="range" min="1" max="20" step="1" value="6" aria-label="Resistance in ohms"></label>
+      <div class="readout"><div class="eq" id="eq">I = V ÷ R = 12 ÷ 6</div><div class="big" id="i">2.00 A</div></div>
+    </div>
+
+    <div class="panel">
+      <p class="eyebrow">Challenges</p>
+      <ul class="tasks">
+        <li class="task" id="t1"><div class="t"><span class="badge">1</span><span>Set the current to exactly 2 A</span></div>
+          <button class="btn sm primary" style="margin-top:10px" id="c1">Check</button><div id="m1"></div></li>
+        <li class="task" id="t2"><div class="t"><span class="badge">2</span><span>Keep the battery at 12 V. Reach 4 A by changing only R</span></div>
+          <button class="btn sm primary" style="margin-top:10px" id="c2">Check</button><div id="m2"></div></li>
+        <li class="task" id="t3"><div class="t"><span class="badge">3</span><span>At 12 V and 6 Ω the current is 2 A. If R doubles to 12 Ω, the current will…</span></div>
+          <div class="choices" id="p3"></div><div id="m3"></div></li>
+      </ul>
+      <div class="finish"><button class="btn primary" id="finish" style="width:100%" disabled>Finish lab</button></div>
+      <div id="sent"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+var $ = function (id) { return document.getElementById(id); };
+var V = 12, R = 6, done = { 1: false, 2: false, 3: false }, mistakes = 0, finished = false;
+var cv = $("c"), ctx = cv.getContext("2d");
+var W = 640, H = 420, dpr = Math.min(window.devicePixelRatio || 1, 2);
+function fit() {
+  var w = cv.parentElement.clientWidth - 16; W = Math.max(280, w); H = Math.round(W * 0.66);
+  cv.style.width = W + "px"; cv.style.height = H + "px"; cv.width = W * dpr; cv.height = H * dpr; ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+window.addEventListener("resize", fit); fit();
+
+var dots = []; for (var k = 0; k < 30; k++) dots.push(k / 30);
+var last = performance.now();
+
+// Loop geometry: rectangle path, returns point at fraction s (clockwise from top-left).
+function rect() { var m = 0.14; return { x0: W * m, y0: H * 0.2, x1: W * (1 - m), y1: H * 0.8 }; }
+function pointAt(s) {
+  var g = rect(), w = g.x1 - g.x0, h = g.y1 - g.y0, p = 2 * (w + h), d = (s % 1) * p;
+  if (d < w) return [g.x0 + d, g.y0];
+  d -= w; if (d < h) return [g.x1, g.y0 + d];
+  d -= h; if (d < w) return [g.x1 - d, g.y1];
+  d -= w; return [g.x0, g.y1 - d];
+}
+function current() { return V / R; }
+
+function draw(now) {
+  var dt = Math.min(0.05, (now - last) / 1000); last = now;
+  var I = current(), brand = AURA.cssVar("--brand"), ink = AURA.cssVar("--ink"), muted = AURA.cssVar("--muted"), surface = AURA.cssVar("--surface"), warn = AURA.cssVar("--warn"), line = AURA.cssVar("--line");
+  ctx.clearRect(0, 0, W, H);
+  var g = rect();
+  ctx.lineWidth = 4; ctx.strokeStyle = line; ctx.lineCap = "round"; ctx.lineJoin = "round";
+  ctx.beginPath(); ctx.rect(g.x0, g.y0, g.x1 - g.x0, g.y1 - g.y0); ctx.stroke();
+
+  // Battery on the left wire
+  var by = (g.y0 + g.y1) / 2;
+  ctx.fillStyle = surface; ctx.fillRect(g.x0 - 22, by - 30, 44, 60);
+  ctx.strokeStyle = ink; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(g.x0 - 18, by - 8); ctx.lineTo(g.x0 + 18, by - 8); ctx.stroke();
+  ctx.lineWidth = 6; ctx.beginPath(); ctx.moveTo(g.x0 - 10, by + 8); ctx.lineTo(g.x0 + 10, by + 8); ctx.stroke();
+  ctx.fillStyle = ink; ctx.font = "600 14px system-ui"; ctx.textAlign = "left"; ctx.fillText("+", g.x0 + 24, by - 4); ctx.fillText("−", g.x0 + 24, by + 16);
+  ctx.textAlign = "center"; ctx.fillStyle = brand; ctx.font = "700 15px system-ui"; ctx.fillText(V + " V", g.x0, by + 50);
+
+  // Resistor (zigzag) on the top wire
+  var cx = (g.x0 + g.x1) / 2, rw = Math.min(140, (g.x1 - g.x0) * 0.4);
+  ctx.fillStyle = surface; ctx.fillRect(cx - rw / 2 - 4, g.y0 - 20, rw + 8, 40);
+  ctx.strokeStyle = warn; ctx.lineWidth = 3.5; ctx.beginPath(); ctx.moveTo(cx - rw / 2, g.y0);
+  for (var z = 0; z < 8; z++) ctx.lineTo(cx - rw / 2 + (rw / 8) * (z + 0.5), g.y0 + (z % 2 ? 14 : -14));
+  ctx.lineTo(cx + rw / 2, g.y0); ctx.stroke();
+  ctx.fillStyle = warn; ctx.font = "700 15px system-ui"; ctx.textAlign = "center"; ctx.fillText(R + " Ω", cx, g.y0 - 30);
+
+  // Ammeter on the right wire
+  var ay = (g.y0 + g.y1) / 2;
+  ctx.fillStyle = surface; ctx.strokeStyle = ink; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(g.x1, ay, 30, 0, 7); ctx.fill(); ctx.stroke();
+  ctx.fillStyle = ink; ctx.font = "700 13px system-ui"; ctx.fillText("A", g.x1, ay - 8);
+  ctx.font = "700 13px system-ui"; ctx.fillStyle = brand; ctx.fillText(I.toFixed(2), g.x1, ay + 12);
+
+  // Moving charge: speed follows the current
+  var speed = 0.045 * Math.sqrt(I) * (I > 0 ? 1 : 0);
+  for (var d = 0; d < dots.length; d++) {
+    dots[d] = (dots[d] + dt * speed * 1.6) % 1;
+    var p = pointAt(dots[d]);
+    ctx.fillStyle = brand; ctx.globalAlpha = 0.9; ctx.beginPath(); ctx.arc(p[0], p[1], 4.2, 0, 7); ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = muted; ctx.font = "13px system-ui"; ctx.textAlign = "center";
+  ctx.fillText("More current means the charges flow faster", (g.x0 + g.x1) / 2, H - 12);
+  requestAnimationFrame(draw);
+}
+
+function update() {
+  V = +$("v").value; R = +$("r").value; var I = current();
+  $("vv").textContent = V + " V"; $("rv").textContent = R + " Ω";
+  $("i").textContent = I.toFixed(2) + " A"; $("eq").textContent = "I = V ÷ R = " + V + " ÷ " + R;
+}
+$("v").addEventListener("input", update); $("r").addEventListener("input", update);
+
+function feedback(id, ok, text) { $("m" + id).innerHTML = '<div class="msg ' + (ok ? "ok" : "bad") + '">' + text + "</div>"; }
+function complete(n) { done[n] = true; $("t" + n).classList.add("done"); $("t" + n).querySelector(".badge").textContent = "✓"; if (done[1] && done[2] && done[3]) $("finish").disabled = false; }
+function miss(n, text) { mistakes++; feedback(n, false, text); $("t" + n).classList.remove("shake"); void $("t" + n).offsetWidth; $("t" + n).classList.add("shake"); }
+
+$("c1").onclick = function () {
+  if (done[1]) return;
+  if (Math.abs(current() - 2) < 0.005) { feedback(1, true, "Yes. " + V + " V across " + R + " Ω gives 2 A."); complete(1); }
+  else miss(1, "Currently " + current().toFixed(2) + " A. Remember I = V ÷ R. What V and R give 2?");
+};
+$("c2").onclick = function () {
+  if (done[2]) return;
+  if (V !== 12) return miss(2, "The battery must stay at 12 V. Set it back and change only R.");
+  if (Math.abs(current() - 4) < 0.005) { feedback(2, true, "R = V ÷ I = 12 ÷ 4 = 3 Ω. Less resistance, more current."); complete(2); }
+  else miss(2, "That's " + current().toFixed(2) + " A. To get 4 A from 12 V you need R = V ÷ I.");
+};
+[["Double", false], ["Halve", true], ["Stay the same", false]].forEach(function (o) {
+  var b = document.createElement("button"); b.className = "choice"; b.textContent = o[0];
+  b.onclick = function () {
+    if (done[3]) return;
+    if (o[1]) { b.classList.add("right"); feedback(3, true, "Right. I = 12 ÷ 12 = 1 A, half of 2 A. Try it with the sliders."); complete(3); }
+    else { b.classList.add("wrong"); miss(3, "Not quite. With R in the denominator, a bigger R means a smaller current."); }
+  };
+  $("p3").appendChild(b);
+});
+
+$("finish").onclick = function () {
+  if (finished) return; finished = true; $("finish").disabled = true;
+  var score = Math.max(40, 100 - 12 * mistakes);
+  AURA.complete({ score: score, mistakes: mistakes });
+  $("sent").innerHTML = '<div class="sent" style="margin-top:12px">Result sent to AURA: ' + score + "%</div>";
+};
+
+update(); requestAnimationFrame(draw);
+</script>
+</body>
+</html>

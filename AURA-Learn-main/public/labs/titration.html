@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en" data-lab-id="titration-lab">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Acid-Base Titration Lab</title>
+<link rel="stylesheet" href="/labs/lab.css">
+<script src="/labs/aura-bridge.js"></script>
+<style>
+  .bench { display: grid; grid-template-columns: 150px 1fr; gap: 8px; align-items: end; }
+  .flaskwrap { position: relative; text-align: center; }
+  .drop { position: absolute; left: 50%; top: 0; width: 8px; height: 12px; margin-left: -4px; border-radius: 50% 50% 60% 60%; background: var(--brand); opacity: 0; }
+  .drop.go { animation: fall .45s ease-in; }
+  @keyframes fall { 0% { opacity: 1; transform: translateY(0); } 90% { opacity: 1; } 100% { opacity: 0; transform: translateY(150px); } }
+  .btnrow { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+  .stat { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--line); }
+  .stat:last-child { border: 0; } .stat b { font-variant-numeric: tabular-nums; }
+  input[type=number] { height: 40px; width: 110px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); padding: 0 10px; font: inherit; font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="lab">
+  <div>
+    <div class="stage">
+      <div class="bench">
+        <svg id="burette" viewBox="0 0 150 300" width="150" height="300" aria-label="Burette containing 0.100 M NaOH"></svg>
+        <div class="flaskwrap"><div class="drop" id="drop"></div>
+          <svg id="flask" viewBox="0 0 260 300" width="100%" height="300" aria-label="Flask containing HCl and phenolphthalein"></svg></div>
+      </div>
+    </div>
+    <div class="panel" style="margin-top:16px">
+      <p class="eyebrow">pH curve</p>
+      <canvas id="curve" style="width:100%;height:170px;display:block"></canvas>
+    </div>
+  </div>
+
+  <div style="display:grid;gap:16px">
+    <div class="panel">
+      <p class="eyebrow">Add NaOH (0.100 M) to 25.0 mL of HCl</p>
+      <div class="btnrow">
+        <button class="btn sm" data-add="5">+5 mL</button><button class="btn sm" data-add="1">+1 mL</button>
+        <button class="btn sm" data-add="0.1">+0.1 mL</button><button class="btn sm primary" data-add="0.05">1 drop (0.05 mL)</button>
+        <button class="btn sm" id="reset">Reset</button>
+      </div>
+      <div class="stat"><span class="muted">Volume added</span><b id="vol">0.00 mL</b></div>
+      <div class="stat"><span class="muted">Indicator</span><b id="ind">Colourless</b></div>
+      <div class="stat"><span class="muted">pH meter</span><b id="ph">1.10</b></div>
+    </div>
+
+    <div class="panel">
+      <p class="eyebrow">Your analysis</p>
+      <ul class="tasks">
+        <li class="task" id="t1"><div class="t"><span class="badge">1</span><span>Add NaOH until the solution first turns pink, then record the endpoint</span></div>
+          <button class="btn sm primary" style="margin-top:10px" id="rec">Record endpoint</button><div id="m1"></div></li>
+        <li class="task" id="t2"><div class="t"><span class="badge">2</span><span>Calculate the concentration of the HCl in mol/L</span></div>
+          <div class="row" style="margin-top:10px;justify-content:flex-start"><input id="ans" type="number" step="0.001" placeholder="0.000" aria-label="HCl concentration in mol per litre"><span class="muted">mol/L</span>
+          <button class="btn sm primary" id="chk" disabled>Check</button></div>
+          <p class="muted" style="margin:8px 0 0">Use M₁V₁ = M₂V₂ (1:1 reaction)</p><div id="m2"></div></li>
+      </ul>
+      <div class="finish"><button class="btn primary" id="finish" style="width:100%" disabled>Finish lab</button></div>
+      <div id="sent"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+var $ = function (id) { return document.getElementById(id); };
+var NS = "http://www.w3.org/2000/svg";
+var CA = 0.080, CB = 0.100, VA = 25.0; // hidden unknown HCl concentration (mol/L), NaOH concentration, flask volume (mL)
+var V = 0, hist = [[0, phAt(0)]], recorded = null, mistakes = 0, done1 = false, done2 = false, finished = false;
+
+function round2(x) { return Math.round(x * 100) / 100; }
+function phAt(v) {
+  var nH = CA * VA, nOH = CB * v, vt = VA + v, d = nH - nOH;
+  if (Math.abs(d) < 1e-9) return 7;
+  if (d > 0) return -Math.log10(d / vt);
+  return 14 + Math.log10(-d / vt);
+}
+// Phenolphthalein: colourless below pH 8.2, fully pink by about pH 10.
+function pinkness(ph) { return Math.max(0, Math.min(1, (ph - 8.2) / 1.8)); }
+
+function drawBurette() {
+  var el = $("burette"), level = 50 - V, top = 30, h = 220, mlpx = h / 50;
+  var ink = "var(--ink)", faint = "var(--faint)";
+  var s = '<rect x="58" y="' + top + '" width="34" height="' + h + '" rx="6" fill="var(--surface)" stroke="' + faint + '" stroke-width="2"/>';
+  s += '<rect x="60" y="' + (top + (50 - level) * mlpx) + '" width="30" height="' + (level * mlpx) + '" fill="var(--brand)" opacity=".28"/>';
+  for (var m = 0; m <= 50; m += 5) {
+    var y = top + m * mlpx;
+    s += '<line x1="58" x2="' + (m % 10 === 0 ? 74 : 68) + '" y1="' + y + '" y2="' + y + '" stroke="' + faint + '"/>';
+    if (m % 10 === 0) s += '<text x="98" y="' + (y + 4) + '" font-size="11" fill="' + faint + '">' + m + '</text>';
+  }
+  s += '<rect x="66" y="' + (top + h) + '" width="18" height="14" fill="' + faint + '" rx="3"/><rect x="72" y="' + (top + h + 14) + '" width="6" height="22" fill="' + faint + '"/>';
+  s += '<text x="75" y="18" text-anchor="middle" font-size="12" font-weight="700" fill="var(--brand)">0.100 M NaOH</text>';
+  el.innerHTML = s;
+}
+function drawFlask() {
+  var ph = phAt(V), p = pinkness(ph), col = "rgba(236,72,153," + (p * 0.75).toFixed(2) + ")";
+  var liquid = 120 + Math.min(V, 40) * 0.8;
+  var s = '<path d="M105 30 h50 v70 l60 110 q10 24 -14 24 h-142 q-24 0 -14 -24 l60 -110 z" fill="var(--surface)" stroke="var(--faint)" stroke-width="3" stroke-linejoin="round"/>';
+  s += '<clipPath id="fc"><path d="M105 30 h50 v70 l60 110 q10 24 -14 24 h-142 q-24 0 -14 -24 l60 -110 z"/></clipPath>';
+  s += '<rect x="0" y="' + (300 - liquid) + '" width="260" height="' + liquid + '" fill="var(--brand)" opacity=".10" clip-path="url(#fc)"/>';
+  s += '<rect x="0" y="' + (300 - liquid) + '" width="260" height="' + liquid + '" fill="' + col + '" clip-path="url(#fc)" style="transition:fill .35s"/>';
+  s += '<text x="130" y="272" text-anchor="middle" font-size="13" font-weight="600" fill="var(--muted)">HCl + phenolphthalein</text>';
+  $("flask").innerHTML = s;
+}
+function drawCurve() {
+  var c = $("curve"), dpr = Math.min(window.devicePixelRatio || 1, 2), w = c.clientWidth, h = 170;
+  c.width = w * dpr; c.height = h * dpr; var g = c.getContext("2d"); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, w, h);
+  var L = 34, R = 12, T = 10, B = 26, pw = w - L - R, ph = h - T - B, xmax = 40;
+  var x = function (v) { return L + (v / xmax) * pw; }, y = function (p) { return T + (1 - p / 14) * ph; };
+  var line = AURA.cssVar("--line"), faint = AURA.cssVar("--faint"), brand = AURA.cssVar("--brand"), surface = AURA.cssVar("--surface");
+  g.font = "11px system-ui"; g.fillStyle = faint; g.strokeStyle = line; g.lineWidth = 1; g.textAlign = "right";
+  [0, 7, 14].forEach(function (t) { g.beginPath(); g.moveTo(L, y(t)); g.lineTo(L + pw, y(t)); g.stroke(); g.fillText(t, L - 6, y(t) + 4); });
+  g.textAlign = "center"; [0, 10, 20, 30].forEach(function (t) { g.fillText(t, x(t), h - 8); });
+  g.textAlign = "right"; g.fillText("mL NaOH", w - R, h - 8);
+  g.strokeStyle = brand; g.lineWidth = 2.5; g.lineJoin = "round"; g.beginPath();
+  hist.forEach(function (p, i) { var px = x(p[0]), py = y(p[1]); i ? g.lineTo(px, py) : g.moveTo(px, py); }); g.stroke();
+  var lp = hist[hist.length - 1]; g.fillStyle = brand; g.strokeStyle = surface; g.lineWidth = 2; g.beginPath(); g.arc(x(lp[0]), y(lp[1]), 5, 0, 7); g.fill(); g.stroke();
+}
+function refresh() {
+  var ph = phAt(V), p = pinkness(ph);
+  $("vol").textContent = V.toFixed(2) + " mL"; $("ph").textContent = ph.toFixed(2);
+  $("ind").textContent = p < 0.05 ? "Colourless" : p < 0.6 ? "Faint pink" : "Pink";
+  drawBurette(); drawFlask(); drawCurve();
+}
+function add(step) {
+  if (V >= 50) return;
+  var target = round2(Math.min(50, V + step)), n = Math.max(1, Math.round(step / 0.05)), i = 0;
+  var d = $("drop"); d.classList.remove("go"); void d.offsetWidth; d.classList.add("go");
+  // Record intermediate points so the curve is drawn smoothly
+  var from = V, steps = Math.min(n, 24);
+  for (var k = 1; k <= steps; k++) { var v = round2(from + ((target - from) * k) / steps); hist.push([v, phAt(v)]); }
+  V = target; refresh();
+}
+document.querySelectorAll("[data-add]").forEach(function (b) { b.onclick = function () { add(+b.dataset.add); }; });
+$("reset").onclick = function () { V = 0; hist = [[0, phAt(0)]]; recorded = null; refresh(); if (!done1) $("m1").innerHTML = ""; };
+
+function fb(id, ok, t) { $(id).innerHTML = '<div class="msg ' + (ok ? "ok" : "bad") + '">' + t + "</div>"; }
+function complete(n) { $("t" + n).classList.add("done"); $("t" + n).querySelector(".badge").textContent = "✓"; if (done1 && done2) $("finish").disabled = false; }
+
+$("rec").onclick = function () {
+  if (done1) return;
+  var p = pinkness(phAt(V));
+  if (p < 0.05) { mistakes++; return fb("m1", false, "The solution is still colourless. Keep adding NaOH, and use single drops near the end."); }
+  if (V > 20.25) { mistakes++; return fb("m1", false, "You overshot: " + V.toFixed(2) + " mL is too far past the endpoint. Reset and add drop by drop as you get close."); }
+  recorded = V; done1 = true; fb("m1", true, "Endpoint recorded at " + V.toFixed(2) + " mL. The indicator just changed."); complete(1); $("chk").disabled = false;
+};
+$("chk").onclick = function () {
+  if (done2 || recorded === null) return;
+  var val = parseFloat($("ans").value);
+  if (!isFinite(val)) return fb("m2", false, "Enter a number, for example 0.085.");
+  var expected = (CB * recorded) / VA;
+  if (Math.abs(val - expected) <= 0.0015) { done2 = true; fb("m2", true, "Correct: M₁ = (0.100 × " + recorded.toFixed(2) + ") ÷ 25.0 = " + expected.toFixed(3) + " mol/L."); complete(2); }
+  else { mistakes++; fb("m2", false, "Not quite. Moles of NaOH = 0.100 × " + recorded.toFixed(2) + " mL. The HCl is 25.0 mL, so divide by 25.0."); }
+};
+$("finish").onclick = function () {
+  if (finished) return; finished = true; $("finish").disabled = true;
+  var score = Math.max(40, 100 - 12 * mistakes);
+  AURA.complete({ score: score, mistakes: mistakes });
+  $("sent").innerHTML = '<div class="sent" style="margin-top:12px">Result sent to AURA: ' + score + "%</div>";
+};
+AURA.onTheme(refresh); window.addEventListener("resize", drawCurve); refresh();
+</script>
+</body>
+</html>

@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="en" data-lab-id="senses-lab">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Signal Path Lab: Human Senses</title>
+<link rel="stylesheet" href="/labs/lab.css">
+<script src="/labs/aura-bridge.js"></script>
+<style>
+  .lab { grid-template-columns: 1fr; max-width: 860px; margin: 0 auto; }
+  .pathrow { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin: 14px 0; }
+  @media (max-width: 640px) { .pathrow { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .node { position: relative; min-height: 84px; border-radius: 14px; border: 2px dashed var(--line); padding: 10px 8px; display: grid; place-items: center; text-align: center; font-size: 13px; font-weight: 600; color: var(--faint); transition: all .25s; }
+  .node small { display: block; font-weight: 500; font-size: 11px; color: var(--muted); }
+  .node.fixed { border-style: solid; border-color: var(--brand); background: var(--brand-soft); color: var(--ink); }
+  .node.filled { border-style: solid; border-color: var(--success); background: var(--success-soft); color: var(--ink); }
+  .node.pulse { box-shadow: 0 0 0 4px color-mix(in srgb, var(--brand) 40%, transparent); transform: translateY(-3px); }
+  .tiles { display: flex; flex-wrap: wrap; gap: 8px; }
+  .tile { padding: 10px 14px; border-radius: 12px; border: 1px solid var(--line); background: var(--surface); font-weight: 600; color: var(--ink); }
+  .tile:hover { border-color: var(--brand); } .tile.used { opacity: .3; pointer-events: none; }
+  .prog { display: flex; gap: 6px; }
+  .prog i { width: 28px; height: 6px; border-radius: 3px; background: var(--subtle); } .prog i.on { background: var(--brand); } .prog i.ok { background: var(--success); }
+</style>
+</head>
+<body>
+<div class="lab">
+  <div class="panel">
+    <div class="row"><p class="eyebrow" style="margin:0" id="round">Round 1 of 3</p><div class="prog" id="prog"></div></div>
+    <h2 style="font-size:19px;margin:12px 0 2px" id="stim"></h2>
+    <p class="muted" id="organ"></p>
+
+    <div class="pathrow" id="path"></div>
+
+    <div id="step1"><p class="eyebrow">Step 1. Which receptor detects this stimulus?</p><div class="choices" id="recChoices" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))"></div></div>
+    <div id="step2" style="display:none"><p class="eyebrow">Step 2. Tap the steps in the order the signal travels</p><div class="tiles" id="tiles"></div></div>
+    <div id="msg"></div>
+    <div class="row" style="margin-top:14px"><span class="muted" id="mcount"></span><button class="btn primary" id="next" style="display:none">Next round</button></div>
+    <div id="sent"></div>
+  </div>
+</div>
+
+<script>
+var $ = function (id) { return document.getElementById(id); };
+var ROUNDS = [
+  { stim: "A bright torch shines into your eyes", organ: "Sense organ: eye", receptor: "Photoreceptors", process: "Brain", response: "Pupils get smaller" },
+  { stim: "You touch a very hot cup", organ: "Sense organ: skin", receptor: "Thermoreceptors", process: "Spinal cord (reflex)", response: "Your hand pulls away" },
+  { stim: "A loud clap sounds behind you", organ: "Sense organ: ear", receptor: "Mechanoreceptors (hair cells)", process: "Brain", response: "You turn your head" }
+];
+var RECEPTORS = ["Photoreceptors", "Thermoreceptors", "Mechanoreceptors (hair cells)", "Chemoreceptors"];
+var ORDER = ["Sensory neuron", "PROCESS", "Motor neuron"];
+var round = 0, mistakes = 0, placed = 0, chosen = false, results = [];
+
+function nodes(r) {
+  return [
+    { label: "Stimulus", sub: r.stim.replace(/^A |^You /, ""), cls: "fixed" },
+    { label: "Receptor", sub: chosen ? r.receptor : "?" , cls: chosen ? "filled" : "" },
+    { label: "Sensory neuron", sub: "", cls: placed > 0 ? "filled" : "" },
+    { label: r.process, sub: "", cls: placed > 1 ? "filled" : "" },
+    { label: "Motor neuron", sub: "", cls: placed > 2 ? "filled" : "" },
+    { label: "Response", sub: r.response, cls: "fixed" }
+  ];
+}
+function renderPath(pulseIndex) {
+  var r = ROUNDS[round];
+  $("path").innerHTML = nodes(r).map(function (n, i) {
+    var show = n.cls || i === 5 || i === 0;
+    var text = show ? n.label : "?";
+    return '<div class="node ' + n.cls + (pulseIndex === i ? " pulse" : "") + '">' + '<span>' + text + (n.sub && show ? "<small>" + n.sub + "</small>" : "") + "</span></div>";
+  }).join("");
+}
+function renderProg() { $("prog").innerHTML = ROUNDS.map(function (_, i) { return "<i class=\"" + (results[i] !== undefined ? "ok" : i === round ? "on" : "") + "\"></i>"; }).join(""); }
+function msg(ok, t) { $("msg").innerHTML = '<div class="msg ' + (ok ? "ok" : "bad") + '">' + t + "</div>"; }
+
+function startRound() {
+  var r = ROUNDS[round]; placed = 0; chosen = false;
+  $("round").textContent = "Round " + (round + 1) + " of " + ROUNDS.length; $("stim").textContent = r.stim; $("organ").textContent = r.organ;
+  $("msg").innerHTML = ""; $("next").style.display = "none"; $("step1").style.display = ""; $("step2").style.display = "none";
+  $("recChoices").innerHTML = ""; RECEPTORS.forEach(function (name) {
+    var b = document.createElement("button"); b.className = "choice"; b.textContent = name;
+    b.onclick = function () {
+      if (chosen) return;
+      if (name === r.receptor) { chosen = true; b.classList.add("right"); msg(true, "Yes. " + name + " detect this stimulus."); $("step1").style.display = "none"; $("step2").style.display = ""; buildTiles(); renderPath(1); }
+      else { mistakes++; b.classList.add("wrong"); msg(false, "Not this one. Think about what kind of stimulus it is: light, heat, pressure or chemical."); }
+    };
+    $("recChoices").appendChild(b);
+  });
+  renderPath(); renderProg(); $("mcount").textContent = "Mistakes so far: " + mistakes;
+}
+function buildTiles() {
+  var r = ROUNDS[round]; var labels = ["Motor neuron", r.process, "Sensory neuron"]; // shuffled on purpose
+  $("tiles").innerHTML = ""; labels.forEach(function (l) {
+    var b = document.createElement("button"); b.className = "tile"; b.textContent = l;
+    b.onclick = function () {
+      var want = ORDER[placed] === "PROCESS" ? r.process : ORDER[placed];
+      if (l === want) { b.classList.add("used"); placed++; renderPath(placed + 1); msg(true, "Correct so far."); if (placed === 3) finishRound(); }
+      else { mistakes++; b.classList.remove("shake"); void b.offsetWidth; b.classList.add("shake"); msg(false, "Not yet. The signal goes receptor, then sensory neuron, then processing, then motor neuron, then the response."); }
+      $("mcount").textContent = "Mistakes so far: " + mistakes;
+    };
+    $("tiles").appendChild(b);
+  });
+}
+function finishRound() {
+  results[round] = true; renderProg();
+  var i = 0, t = setInterval(function () { renderPath(i); if (++i > 5) { clearInterval(t); renderPath(); } }, 260);
+  msg(true, "Signal complete. " + (round === 1 ? "Reflexes go through the spinal cord, which is why they are so fast." : "The brain decides how to respond."));
+  $("next").style.display = ""; $("next").textContent = round === ROUNDS.length - 1 ? "Finish lab" : "Next round";
+}
+$("next").onclick = function () {
+  if (round < ROUNDS.length - 1) { round++; startRound(); return; }
+  var score = Math.max(40, 100 - 10 * mistakes);
+  AURA.complete({ score: score, mistakes: mistakes });
+  $("next").style.display = "none"; $("step2").style.display = "none";
+  $("sent").innerHTML = '<div class="sent" style="margin-top:12px">Result sent to AURA: ' + score + "%</div>";
+};
+startRound();
+</script>
+</body>
+</html>

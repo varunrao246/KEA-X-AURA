@@ -1,0 +1,243 @@
+/**
+ * KEA Platform — Canonical Organic Chemistry Demo Route & Curriculum Plan
+ * 
+ * "Organic Chemistry — From Carbon to Organic Molecules"
+ * Layered on top of generic KEA Knowledge Graph and Mastery Engine.
+ */
+
+import { TopicCurriculumPlan } from '@/types/topic-path';
+
+export const ORGANIC_CHEMISTRY_TOPIC_PLAN: TopicCurriculumPlan = {
+  topic: 'Organic Chemistry',
+  category: 'Chemistry & Molecular Science',
+  estimatedHours: 14,
+  overview:
+    'Explore the structural logic of carbon chemistry: from tetravalency and orbital hybridization to hydrocarbon chains, functional groups, and molecular reaction pathways.',
+  prerequisiteSummary:
+    'Requires high school atomic structure (protons, electrons, electron shells) and the concept of covalent electron sharing.',
+  diagnosticQuestions: [
+    {
+      id: 'org-diag-1',
+      question: 'How many valence electrons does a neutral Carbon atom have in its outermost shell?',
+      context: 'Diagnostic Check: Carbon Electron Configuration',
+      conceptTested: 'Carbon Valency',
+      options: [
+        { id: 'opt-a', label: '2 valence electrons', isCorrect: false },
+        { id: 'opt-b', label: '4 valence electrons', isCorrect: true },
+        { id: 'opt-c', label: '6 valence electrons', isCorrect: false },
+        { id: 'opt-d', label: '8 valence electrons', isCorrect: false },
+      ],
+      explanation: 'Carbon has atomic number 6 (electron configuration 2, 4), meaning it has 4 valence electrons and requires 4 covalent bonds to complete its octet.',
+    },
+    {
+      id: 'org-diag-2',
+      question: 'What type of chemical bond is formed when two atoms share a pair of electrons?',
+      context: 'Diagnostic Check: Chemical Bonding',
+      conceptTested: 'Covalent Bonding',
+      options: [
+        { id: 'opt-a', label: 'Ionic bond', isCorrect: false },
+        { id: 'opt-b', label: 'Covalent bond', isCorrect: true },
+        { id: 'opt-c', label: 'Metallic bond', isCorrect: false },
+        { id: 'opt-d', label: 'Hydrogen bond', isCorrect: false },
+      ],
+      explanation: 'A covalent bond forms when two nonmetal atoms share one or more pairs of electrons to achieve stable electronic configurations.',
+    },
+  ],
+  stages: [
+    {
+      id: 'stage-org-1',
+      stageNumber: 1,
+      title: 'Carbon Fundamentals',
+      tagline: 'Tetravalency, Catenation & Hybridization',
+      objective: 'Internalize carbon\'s 4-bond capacity, unique catenation chains, single/double/triple bonds, and geometric hybridization.',
+      concepts: [
+        {
+          id: 'c-org-1',
+          name: 'Carbon Tetravalency & Bonding Slots',
+          summary: 'Carbon forms 4 covalent bonds to satisfy the octet rule',
+          difficulty: 'foundational',
+          status: 'unlocked',
+        },
+        {
+          id: 'c-org-2',
+          name: 'Catenation & Carbon Chains',
+          summary: 'Carbon bonds with carbon to form extended chains and rings',
+          difficulty: 'foundational',
+          status: 'unlocked',
+        },
+        {
+          id: 'c-org-3',
+          name: 'Single, Double & Triple Bonds',
+          summary: 'Sharing 1, 2, or 3 electron pairs: Ethane, Ethene, Ethyne',
+          difficulty: 'foundational',
+          status: 'unlocked',
+        },
+        {
+          id: 'c-org-4',
+          name: 'Orbital Hybridization & Geometry',
+          summary: 'sp3 (109.5°), sp2 (120°), and sp (180°) spatial geometries',
+          difficulty: 'intermediate',
+          status: 'unlocked',
+        },
+        {
+          id: 'c-org-5',
+          name: 'Synthesis Challenge: Build Ethene',
+          summary: 'Assemble a valid C2H4 molecule meeting exact valence rules',
+          difficulty: 'intermediate',
+          status: 'unlocked',
+        },
+      ],
+      prerequisites: ['Atomic structure & covalent electron sharing'],
+      learningActivities: [
+        'Interactive Tetravalent Atom Visualizer',
+        'Dynamic Carbon Chain Builder (C1 to C6)',
+        'Bond Order Comparator (Single/Double/Triple)',
+        '3D Orbital Hybridization Geometry Switcher',
+        'Interactive Molecular Assembly Challenge (Build Ethene)',
+      ],
+      milestoneAssessment: 'Synthesis Defense: Build a structurally valid Ethene molecule with 0 valence violations',
+      masteryCondition: 'Score ≥ 80% on molecular construction and deterministic valence verification',
+      status: 'unlocked',
+    },
+    {
+      id: 'stage-org-2',
+      stageNumber: 2,
+      title: 'Hydrocarbon Foundations',
+      tagline: 'Alkanes, Alkenes & Alkynes',
+      objective: 'Differentiate saturated vs unsaturated hydrocarbons, homologous formulas (CnH2n+2, CnH2n, CnH2n-2), and IUPAC prefixes.',
+      concepts: [
+        {
+          id: 'c-org-6',
+          name: 'Alkanes & Saturated Hydrocarbons',
+          summary: 'Single-bonded carbon networks with maximum hydrogen capacity',
+          difficulty: 'intermediate',
+          status: 'locked',
+        },
+        {
+          id: 'c-org-7',
+          name: 'Alkenes, Alkynes & Unsaturation',
+          summary: 'Double and triple bonds introducing reactive unsaturation sites',
+          difficulty: 'intermediate',
+          status: 'locked',
+        },
+        {
+          id: 'c-org-8',
+          name: 'Homologous Series & IUPAC Rules',
+          summary: 'Systematic nomenclature prefixes (meth-, eth-, prop-, but-)',
+          difficulty: 'intermediate',
+          status: 'locked',
+        },
+      ],
+      prerequisites: ['Stage 1: Carbon Fundamentals (Requires Stage 1 Mastery ≥ 80%)'],
+      learningActivities: ['Saturation level test explorer', 'IUPAC name generator simulator'],
+      milestoneAssessment: 'Hydrocarbon Matrix: Classify 6 molecules by saturation and formulate names',
+      masteryCondition: 'Achieve ≥ 80% accuracy on homologous series classification',
+      status: 'locked',
+    },
+    {
+      id: 'stage-org-3',
+      stageNumber: 3,
+      title: 'Functional Groups',
+      tagline: 'Heteroatoms & Chemical Signatures',
+      objective: 'Identify oxygen- and nitrogen-bearing functional groups (alcohols, aldehydes, ketones, carboxylic acids, amines).',
+      concepts: [
+        {
+          id: 'c-org-9',
+          name: 'Alcohols & Hydroxyl Group (-OH)',
+          summary: 'Polar -OH group altering boiling points and solubility',
+          difficulty: 'intermediate',
+          status: 'locked',
+        },
+        {
+          id: 'c-org-10',
+          name: 'Carbonyl Compounds: Aldehydes & Ketones',
+          summary: 'C=O polar double bond reactivity and structural positioning',
+          difficulty: 'intermediate',
+          status: 'locked',
+        },
+        {
+          id: 'c-org-11',
+          name: 'Carboxylic Acids & Amines',
+          summary: '-COOH and -NH2 acidic and basic organic functionalities',
+          difficulty: 'advanced',
+          status: 'locked',
+        },
+      ],
+      prerequisites: ['Stage 2: Hydrocarbon Foundations'],
+      learningActivities: ['Functional group spotlighting', 'Heteroatom valence inspector'],
+      milestoneAssessment: 'Group Identification: Pinpoint 5 functional centers on complex organic molecules',
+      masteryCondition: 'Correctly identify 5/5 functional groups across diverse molecular representations',
+      status: 'locked',
+    },
+    {
+      id: 'stage-org-4',
+      stageNumber: 4,
+      title: 'Structure & Isomerism',
+      tagline: 'Connectivity & Spatial Arrangement',
+      objective: 'Compare structural formulas, molecular connectivity, and distinguish chain, positional, and geometric (cis/trans) isomers.',
+      concepts: [
+        {
+          id: 'c-org-12',
+          name: 'Structural vs Molecular Formulas',
+          summary: 'Same chemical formula with completely different atomic connectivity',
+          difficulty: 'intermediate',
+          status: 'locked',
+        },
+        {
+          id: 'c-org-13',
+          name: 'Chain & Positional Isomerism',
+          summary: 'Branching carbon skeletons and substituent migration',
+          difficulty: 'advanced',
+          status: 'locked',
+        },
+        {
+          id: 'c-org-14',
+          name: 'Cis-Trans Geometric Isomerism',
+          summary: 'Restricted rotation around carbon-carbon double bonds',
+          difficulty: 'advanced',
+          status: 'locked',
+        },
+      ],
+      prerequisites: ['Stage 3: Functional Groups'],
+      learningActivities: ['Split-screen isomer comparator', 'Dihedral bond rotation tool'],
+      milestoneAssessment: 'Isomer Detective: Match 4 pairs of molecules to their isomerism class',
+      masteryCondition: 'Demonstrate zero confusion between constitutional and stereoisomers',
+      status: 'locked',
+    },
+    {
+      id: 'stage-org-5',
+      stageNumber: 5,
+      title: 'Reactions & Application',
+      tagline: 'Bond Transformations & Synthesis',
+      objective: 'Recognize addition, substitution, and combustion reactions via dynamic bond breaking and forming.',
+      concepts: [
+        {
+          id: 'c-org-15',
+          name: 'Electrophilic Addition Across C=C',
+          summary: 'Halogenation and hydrogenation converting unsaturated bonds',
+          difficulty: 'advanced',
+          status: 'locked',
+        },
+        {
+          id: 'c-org-16',
+          name: 'Combustion & Oxidation Pathways',
+          summary: 'Energy release and stepwise oxidation from alcohol to acid',
+          difficulty: 'advanced',
+          status: 'locked',
+        },
+        {
+          id: 'c-org-17',
+          name: 'Capstone Organic Synthesis Defense',
+          summary: 'Multi-step target molecule synthesis pathway planning',
+          difficulty: 'advanced',
+          status: 'locked',
+        },
+      ],
+      prerequisites: ['Stage 4: Structure & Isomerism'],
+      learningActivities: ['Reaction pathway animator', 'Bond electron-pushing arrow visualizer'],
+      milestoneAssessment: 'Capstone Synthesis Defense: Plan a 2-step synthesis route from ethene to ethanoic acid',
+      masteryCondition: 'Achieve ≥ 85% on capstone synthesis defense rubrics',
+      status: 'locked',
+    },
+  ],
+};
