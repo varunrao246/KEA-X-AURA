@@ -11,3 +11,5 @@ export * from "./parser";
 export * from "./fallback";
 export * from "./filter";
 export * from "./discovery";
+export * from "./explore-service";
+

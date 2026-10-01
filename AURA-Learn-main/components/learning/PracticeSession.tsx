@@ -23,6 +23,7 @@ import type { AttemptResult, PublicQuestion } from "@/lib/practice";
 import type { StruggleLevel } from "@/lib/struggle";
 import type { Interest, Level } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { MasterBrainCard } from "./MasterBrainCard";
 
 interface Props {
   topicId: string;
@@ -39,7 +40,7 @@ interface Props {
   onOpenInsights: () => void;
 }
 
-type Phase = "loading" | "question" | "checking" | "feedback" | "error" | "locked" | "summary";
+type Phase = "loading" | "question" | "checking" | "feedback" | "master-brain" | "error" | "locked" | "summary";
 interface Answered { id: string; correct: boolean }
 const LETTERS = ["A", "B", "C", "D"];
 
@@ -64,6 +65,13 @@ export function PracticeSession({ topicId, topicName, initialScore, initialLevel
   const [displayedStem, setDisplayedStem] = useState("");
   const [attemptTick, setAttemptTick] = useState(0);
   const [phase, setPhase] = useState<Phase>("loading");
+  const [pendingMasterBrain, setPendingMasterBrain] = useState<boolean>(false);
+  const [masterBrainData, setMasterBrainData] = useState<{
+    topicId: string;
+    topicName: string;
+    masteryScore: number;
+    detectedMisconception: string | null;
+  } | null>(null);
   const [question, setQuestion] = useState<PublicQuestion | null>(null);
   const [level, setLevel] = useState<Level>(initialLevel);
   const [score, setScore] = useState(initialScore);
@@ -99,6 +107,15 @@ export function PracticeSession({ topicId, topicName, initialScore, initialLevel
     startedAt.current = Date.now();
     setPhase("question");
   }, [topicId]);
+
+  function handleNext() {
+    if (pendingMasterBrain && masterBrainData) {
+      setPendingMasterBrain(false);
+      setPhase("master-brain");
+    } else {
+      void loadNext();
+    }
+  }
 
   /** Re-attempt the SAME question the tutor is coaching on, instead of moving to a new one. */
   function retrySame() {
@@ -155,6 +172,21 @@ export function PracticeSession({ topicId, topicName, initialScore, initialLevel
     setHistory(next);
     if (d.unlocked.length) setUnlocked((cur) => [...cur, ...d.unlocked.filter((u) => !cur.some((c) => c.id === u.id))]);
     setAttemptTick((n) => n + 1);
+
+    // If answer is correct, replace next question with Master Brain!
+    if (d.correct) {
+      setPendingMasterBrain(true);
+      setMasterBrainData({
+        topicId,
+        topicName: d.topicName,
+        masteryScore: d.mastery.after,
+        detectedMisconception: d.prerequisiteCheck && !d.prerequisiteCheck.solid ? d.prerequisiteCheck.message : null,
+      });
+    } else {
+      setPendingMasterBrain(false);
+      setMasterBrainData(null);
+    }
+
     setPhase("feedback");
     // Re-render the server-side parts of the page (mastery card, unlock list) with the new numbers.
     router.refresh();
@@ -220,7 +252,20 @@ export function PracticeSession({ topicId, topicName, initialScore, initialLevel
         </Card>
       )}
 
-      {question && phase !== "loading" && (
+      {phase === "master-brain" && masterBrainData && (
+        <MasterBrainCard
+          topicId={masterBrainData.topicId}
+          topicName={masterBrainData.topicName}
+          masteryScore={masterBrainData.masteryScore}
+          detectedMisconception={masterBrainData.detectedMisconception}
+          onFinished={() => {
+            setMasterBrainData(null);
+            void loadNext();
+          }}
+        />
+      )}
+
+      {question && phase !== "loading" && phase !== "master-brain" && (
         <Card padding="lg" className="enter" key={question.id}>
           <div className="mb-4 flex items-center justify-between">
             <span className="t-eyebrow">Question {history.length + (phase === "feedback" ? 0 : 1)}</span>
@@ -295,8 +340,9 @@ export function PracticeSession({ topicId, topicName, initialScore, initialLevel
 
           {phase === "feedback" && result && (
             <Feedback
-              result={result} wrongStreak={wrongStreak} onNext={loadNext} onFinish={() => setPhase("summary")} onReview={onReviewConcept}
+              result={result} wrongStreak={wrongStreak} onNext={handleNext} onFinish={() => setPhase("summary")} onReview={onReviewConcept}
               topicId={topicId} questionId={question.id} displayedStem={displayedStem} proactiveTrigger={String(attemptTick)} onRetry={retrySame}
+              isNextMasterBrain={pendingMasterBrain}
             />
           )}
         </Card>
@@ -308,9 +354,10 @@ export function PracticeSession({ topicId, topicName, initialScore, initialLevel
 interface FeedbackProps {
   result: AttemptResult; wrongStreak: boolean; onNext: () => void; onFinish: () => void; onReview: () => void;
   topicId: string; questionId: string; displayedStem: string; proactiveTrigger: string; onRetry: () => void;
+  isNextMasterBrain?: boolean;
 }
 
-function Feedback({ result, wrongStreak, onNext, onFinish, onReview, topicId, questionId, displayedStem, proactiveTrigger, onRetry }: FeedbackProps) {
+function Feedback({ result, wrongStreak, onNext, onFinish, onReview, topicId, questionId, displayedStem, proactiveTrigger, onRetry, isNextMasterBrain }: FeedbackProps) {
   const delta = result.mastery.after - result.mastery.before;
   const { level } = result;
   return (
@@ -400,7 +447,9 @@ function Feedback({ result, wrongStreak, onNext, onFinish, onReview, topicId, qu
 
       <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
         <Button variant="ghost" onClick={onFinish}>Finish session</Button>
-        <Button size="lg" onClick={onNext} iconRight={<ArrowRight className="size-4" />} autoFocus>Next question</Button>
+        <Button size="lg" onClick={onNext} iconRight={<ArrowRight className="size-4" />} autoFocus>
+          {isNextMasterBrain ? "Next: Master Brain 🧠" : "Next question"}
+        </Button>
       </div>
     </div>
   );

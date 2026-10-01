@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ExploreThisModal } from "./explore-this-modal";
 import {
   ExternalLink,
   Play,
@@ -203,6 +204,14 @@ export function TopicResourcesSection({
               <Badge variant="outline" className="text-[10px] px-1.5 py-0 font-normal text-emerald-600 dark:text-emerald-400 border-emerald-500/30">
                 SERP Discovered
               </Badge>
+            )}
+            {conceptTitle && (
+              <ExploreThisModal
+                topic={topic}
+                conceptTitle={conceptTitle}
+                buttonVariant="outline"
+                buttonSize="sm"
+              />
             )}
           </div>
           <p className="text-xs text-muted-foreground">

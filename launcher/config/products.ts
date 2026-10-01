@@ -31,9 +31,9 @@ export const products = {
   kea: {
     id: "kea",
     name: "KEA 2.0",
-    tagline: "Structured Adaptive Learning",
+    tagline: "Structured Adaptive Learning & Deep Exploration",
     description:
-      "Structured adaptive learning through topic understanding, prerequisites, mastery, and real-time intervention.",
+      "Structured adaptive learning through topic understanding, prerequisites, mastery, and concept-level 'Explore This' powered by SerpApi.",
     url: keaUrl,
     theme: "kea",
     available: keaAvailable,
@@ -42,9 +42,9 @@ export const products = {
   aura: {
     id: "aura",
     name: "AURA Learn",
-    tagline: "Interactive Learning Experience",
+    tagline: "Adaptive Understanding & Master Brain Experience",
     description:
-      "An interactive learning experience built around adaptive learning.",
+      "Adaptive mastery gating, real-time intervention cockpit, and 🧠 Master Brain real-world challenges powered by SerpApi.",
     url: auraUrl,
     theme: "aura",
     available: auraAvailable,

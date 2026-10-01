@@ -51,3 +51,37 @@ export interface DiscoverResourcesResult {
   fromCache: boolean;
   error?: string;
 }
+
+export type ExploreCategory =
+  | 'research'
+  | 'academic'
+  | 'documentation'
+  | 'video'
+  | 'real_world'
+  | 'further_reading';
+
+export interface ExploreResourceItem {
+  id: string;
+  title: string;
+  source: string;
+  url: string;
+  category: ExploreCategory;
+  shortDescription: string;
+  whyRelevant: string;
+  authors?: string[];
+  year?: number;
+  thumbnail?: string;
+  keyMomentTimestamp?: number;
+  duration?: string;
+}
+
+export interface ConceptExploreResult {
+  topic: string;
+  conceptTitle: string;
+  misconceptionTargeted?: string;
+  headline: string;
+  resources: ExploreResourceItem[];
+  fromCache: boolean;
+  searchedAt: number;
+}
+

@@ -12,6 +12,7 @@ import { AttemptLog } from "@/lib/pace/types";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ExploreThisModal } from "@/components/resources/explore-this-modal";
 import {
   Sparkles,
   Rocket,
@@ -262,9 +263,17 @@ export function StudentLearningCanvas({
                 Learner: {studentName} (Class 4-B)
               </span>
             </div>
-            <h2 className="text-lg font-bold text-foreground">
-              {conceptTitle}
-            </h2>
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h2 className="text-lg font-bold text-foreground">
+                {conceptTitle}
+              </h2>
+              <ExploreThisModal
+                topic="Fractions & Mathematics"
+                conceptTitle={conceptTitle}
+                buttonVariant="outline"
+                buttonSize="sm"
+              />
+            </div>
           </div>
 
           {/* 4-Theme Switcher (P1-03) */}
@@ -461,7 +470,14 @@ export function StudentLearningCanvas({
                   <p className="text-xs leading-relaxed">
                     {feedback.explanation}
                   </p>
-                  <div className="pt-2 flex justify-end">
+                  <div className="pt-2 flex flex-wrap items-center justify-between gap-2">
+                    <ExploreThisModal
+                      topic="Fractions & Mathematics"
+                      conceptTitle={conceptTitle}
+                      misconception="Denominator magnitude vs fraction value"
+                      buttonVariant="ghost"
+                      buttonSize="sm"
+                    />
                     <Button
                       size="sm"
                       variant="outline"
