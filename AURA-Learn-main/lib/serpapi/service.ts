@@ -11,13 +11,20 @@ import type { SerpApiEngine, SerpApiUsageLog, SerpApiStats } from "./types";
  * - Deterministic, graceful fallback when offline or key is missing.
  */
 
-const usageLogs: SerpApiUsageLog[] = [];
-let cacheHitsCount = 0;
-let cacheMissesCount = 0;
+const globalForSerp = globalThis as unknown as {
+  serpUsageLogs?: SerpApiUsageLog[];
+  serpCacheHits?: number;
+  serpCacheMisses?: number;
+  serpRequestTimestamps?: number[];
+};
+
+const usageLogs: SerpApiUsageLog[] = globalForSerp.serpUsageLogs || (globalForSerp.serpUsageLogs = []);
+let cacheHitsCount = globalForSerp.serpCacheHits || 0;
+let cacheMissesCount = globalForSerp.serpCacheMisses || 0;
 
 // Rate limiting state
 const MAX_REQUESTS_PER_MINUTE = 15;
-const requestTimestamps: number[] = [];
+const requestTimestamps: number[] = globalForSerp.serpRequestTimestamps || (globalForSerp.serpRequestTimestamps = []);
 
 export function getSerpApiKey(): string | undefined {
   return (
@@ -53,8 +60,10 @@ export function recordSerpApiUsage(log: SerpApiUsageLog) {
   }
   if (log.cacheHit) {
     cacheHitsCount++;
+    globalForSerp.serpCacheHits = cacheHitsCount;
   } else {
     cacheMissesCount++;
+    globalForSerp.serpCacheMisses = cacheMissesCount;
   }
 }
 
@@ -181,7 +190,7 @@ export async function executeSerpApiSearch(
 
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
+    const timeout = setTimeout(() => controller.abort(), 25000);
 
     const res = await fetch(url, {
       method: "GET",

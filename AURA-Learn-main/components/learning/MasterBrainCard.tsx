@@ -466,6 +466,7 @@ export function MasterBrainCard({
                 <span>🌎 Real-World Connection</span>
                 <span>•</span>
                 <span className="text-brand">{evaluation.realWorldConnection.domain}</span>
+                <span className="ml-auto rounded-full bg-brand/10 px-2 py-0.5 text-[10px] font-semibold text-brand">Powered by SerpApi</span>
               </div>
               <h5 className="mt-1 text-sm font-bold text-ink">
                 {evaluation.realWorldConnection.title}

@@ -414,8 +414,8 @@ export async function getOrGenerateTopicIntelligencePack(
 
   // 2. Try SerpApi Google Search Discovery
   const searchResult = await executeSerpApiSearch("google", {
-    q: `${topic} science tutorial misconceptions real world applications`,
-    num: 10,
+    q: `${topic} guide tutorial`,
+    num: 8,
   });
 
   const now = new Date().toISOString();

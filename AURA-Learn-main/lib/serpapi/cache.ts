@@ -11,7 +11,10 @@ import { recordSerpApiUsage } from "./service";
  * 3. File store fallback
  */
 
-const memoryCache = new Map<string, { pack: TopicIntelligencePack; expiresAtMs: number }>();
+const globalForCache = globalThis as unknown as {
+  serpMemoryCache?: Map<string, { pack: TopicIntelligencePack; expiresAtMs: number }>;
+};
+const memoryCache = globalForCache.serpMemoryCache || (globalForCache.serpMemoryCache = new Map());
 
 const DEFAULT_TTL_MS = 7 * 24 * 60 * 60 * 1000; // 7 days
 
